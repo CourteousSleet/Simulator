@@ -9,7 +9,7 @@ class TubeBorder:
     x_center = 0
     y_center = 0
 
-    def __init__(self, radius=1, x_center=0, y_center=0):
+    def __init__(self, radius=0.1, x_center=0, y_center=0):
         self.radius = radius
         self.x_center = x_center
         self.y_center = y_center
@@ -21,7 +21,7 @@ class TubeBorder:
         phi = np.linspace(0, 6.28, 10000)
         x_of_tube = self.x_center + self.radius * np.cos(phi)
         y_of_tube = self.y_center + self.radius * np.sin(phi)
-        ax.plot(x_of_tube, y_of_tube, marker='o')
+        ax.plot(x_of_tube, y_of_tube, 'black')
 
     # def tube_strike_handler(self, ):
 
@@ -35,15 +35,6 @@ class Point2D(object):
     point_radius = 0.1
     coord = (x0, y0)
 
-    def __init__(self, x0, y0, v_x0, v_y0, r):
-        self.x0 = x0
-        self.y0 = y0
-        self.coord = (x0, y0)
-        self.Vx0 = v_x0
-        self.Vy0 = v_y0
-        self.velocity_vector = (v_x0, v_y0)
-        self.point_radius = r
-
     def __init__(self, x0, y0, v_x0, v_y0):
         self.x0 = x0
         self.y0 = y0
@@ -51,11 +42,6 @@ class Point2D(object):
         self.Vx0 = v_x0
         self.Vy0 = v_y0
         self.velocity_vector = (v_x0, v_y0)
-
-    # def set_data(self, x_new, y_new):
-    #    self.x0 = x_new
-    #    self.y0 = y_new
-    #    self.coord = (self.x0, self.y0)
 
 
 def print_hi(name):
@@ -68,7 +54,6 @@ def __main__():
     points_tuple_y = [rand.random() for i in range(number_of_points)]
     points_tuple_vx0 = [rand.random() for i in range(number_of_points)]
     points_tuple_vy0 = [rand.random() for i in range(number_of_points)]
-    # radius's_values = [rand.random() for i in range(number_of_points)]
 
     print(points_tuple_x)
     print(points_tuple_y)
@@ -81,7 +66,6 @@ def __main__():
     tube = TubeBorder(3, 1, 1)
 
     fig = plt.figure()
-    # matplotlib.use('TkAgg')
     ax = fig.add_subplot(1, 1, 1)
     # ax.plot(points_tuple_x, points_tuple_y, marker='o') -- Draws points as a polyline
     drawn_points = []
@@ -93,6 +77,7 @@ def __main__():
 
     tube.draw_tube(ax)
 
+    global t, x_now, y_now, vx_now, vy_now
     t = 0
     dt = 0.01
 
@@ -100,7 +85,7 @@ def __main__():
         dx = vx
         dy = vy
         dvx = 0
-        dvy = 0
+        dvy = 0  # -9.81
         return [dx, dy, dvx, dvy]
 
     x_t0 = [point.x0 for point in points]
@@ -114,7 +99,7 @@ def __main__():
     vy_now = np.array(vy_t0)
 
     def calculate_new_points(i):
-        global t, dt, x_now, y_now, vx_now, vy_now, drawn_points
+        global t, x_now, y_now, vx_now, vy_now
         t += dt
         [d_x, d_y, d_vx, d_vy] = calculate_new_movement_equation(x_now, y_now, vx_now,
                                                                  vy_now, t)
@@ -125,9 +110,9 @@ def __main__():
         vy_new = vy_now + dt * d_vy
 
         is_point_struck = tube.check_border_strike(x_new, y_new)
-        print(is_point_struck)
+        # print(is_point_struck)
 
-        for i in range(is_point_struck):
+        for i in range(len(is_point_struck)):
             if is_point_struck[i]:
                 vx_new[i] = 0
                 vy_new[i] = 0
