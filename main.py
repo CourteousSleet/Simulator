@@ -44,6 +44,31 @@ class Point2D(object):
         self.velocity_vector = (v_x0, v_y0)
 
 
+class DrawnPoint2D(object):
+    x = 0
+    y = 0
+    # z0 = 0
+    Vx = 0
+    Vy = 0
+    PlotPoint = []
+    point_radius = 0.1
+    coord = (x, y)
+
+    def __init__(self, x0, y0, v_x0, v_y0):
+        self.x = x0
+        self.y = y0
+        self.coord = (self.x, self.y)
+        self.Vx = v_x0
+        self.Vy = v_y0
+        self.velocity_vector = (self.Vx, self.Vy)
+
+    def draw_point(self, ax):
+        self.PlotPoint = ax.plot(self.x, self.y, marker='o')
+
+    def redraw_point(self, x, y):
+        self.PlotPoint.set_data(x, y)
+
+
 def print_hi(name):
     print(f'{name}')
 
