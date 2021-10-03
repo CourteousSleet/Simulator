@@ -1,5 +1,5 @@
 from matplotlib.animation import FuncAnimation
-from SystemClasses import *
+from system_classes import *
 import matplotlib.pyplot as plt
 import random
 
@@ -15,10 +15,10 @@ def __main__():
     points_tuple_vx0 = [random.uniform(-1, 3) for _ in range(number_of_points)]
     points_tuple_vy0 = [random.uniform(-1, 3) for _ in range(number_of_points)]
 
-    print(points_tuple_x)
-    print(points_tuple_y)
-    print(points_tuple_vx0)
-    print(points_tuple_vy0)
+    # print(points_tuple_x)
+    # print(points_tuple_y)
+    # print(points_tuple_vx0)
+    # print(points_tuple_vy0)
 
     points = [Point2D(x0, y0, Vx0, Vy0) for x0, y0, Vx0, Vy0 in
               zip(points_tuple_x, points_tuple_y, points_tuple_vx0, points_tuple_vy0)]
@@ -39,7 +39,7 @@ def __main__():
     t = 0
     dt = 0.01
 
-    def calculate_new_movement_equation(x, y, vx, vy, t_in):
+    def calculate_new_movement_equation(vx, vy):
         dx = vx
         dy = vy
         dvx = 0
@@ -59,8 +59,8 @@ def __main__():
     def calculate_new_points(i):
         global t, x_now, y_now, vx_now, vy_now
         t += dt
-        [d_x, d_y, d_vx, d_vy] = calculate_new_movement_equation(x_now, y_now, vx_now,
-                                                                 vy_now, t)
+        [d_x, d_y, d_vx, d_vy] = calculate_new_movement_equation(vx_now,
+                                                                 vy_now)
 
         x_new = x_now + dt * d_x
         y_new = y_now + dt * d_y
@@ -77,9 +77,9 @@ def __main__():
                         ((tube.x_center - x_now[i]) ** 2 + (tube.y_center - y_now[i]) ** 2) ** 0.5)
                 vx_new[i] = -vx_now[i] * (n_x ** 2 - n_y ** 2) - 2 * vy_now[i] * n_x * n_y
                 vy_new[i] = vy_now[i] * (n_x ** 2 - n_y ** 2) - 2 * vx_now[i] * n_x * n_y
-                print(vx_now[i], vy_now[i], vx_new[i], vy_new[i])
-                print(vx_now[i] * n_x + vy_now[i] * n_y, vx_new[i] * n_x + vy_new[i] * n_y)
-                print(vx_now[i] * n_y - vy_now[i] * n_x, vx_new[i] * n_y - vy_new[i] * n_x)
+                # print(vx_now[i], vy_now[i], vx_new[i], vy_new[i])
+                # print(vx_now[i] * n_x + vy_now[i] * n_y, vx_new[i] * n_x + vy_new[i] * n_y)
+                # print(vx_now[i] * n_y - vy_now[i] * n_x, vx_new[i] * n_y - vy_new[i] * n_x)
                 x_new[i] = x_now[i] + dt * vx_new[i]
                 y_new[i] = y_now[i] + dt * vy_new[i]
 
