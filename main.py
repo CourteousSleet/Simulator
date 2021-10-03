@@ -1,72 +1,7 @@
 from matplotlib.animation import FuncAnimation
+from SystemClasses import *
 import matplotlib.pyplot as plt
-import random as rand
-import numpy as np
-
-
-class TubeBorder:
-    radius = 0.1
-    x_center = 0
-    y_center = 0
-
-    def __init__(self, radius=0.1, x_center=0, y_center=0):
-        self.radius = radius
-        self.x_center = x_center
-        self.y_center = y_center
-
-    def check_border_strike(self, x, y):
-        return (x - self.x_center) ** 2 + (y - self.y_center) ** 2 > self.radius * 2
-
-    def draw_tube(self, ax):
-        phi = np.linspace(0, 6.28, 10000)
-        x_of_tube = self.x_center + self.radius * np.cos(phi)
-        y_of_tube = self.y_center + self.radius * np.sin(phi)
-        ax.plot(x_of_tube, y_of_tube, 'black')
-
-    # def tube_strike_handler(self, ):
-
-
-class Point2D(object):
-    x0 = 0
-    y0 = 0
-    # z0 = 0
-    Vx0 = 0
-    Vy0 = 0
-    point_radius = 0.1
-    coord = (x0, y0)
-
-    def __init__(self, x0, y0, v_x0, v_y0):
-        self.x0 = x0
-        self.y0 = y0
-        self.coord = (x0, y0)
-        self.Vx0 = v_x0
-        self.Vy0 = v_y0
-        self.velocity_vector = (v_x0, v_y0)
-
-
-class DrawnPoint2D(object):
-    x = 0
-    y = 0
-    # z0 = 0
-    Vx = 0
-    Vy = 0
-    PlotPoint = []
-    point_radius = 0.1
-    coord = (x, y)
-
-    def __init__(self, x0, y0, v_x0, v_y0):
-        self.x = x0
-        self.y = y0
-        self.coord = (self.x, self.y)
-        self.Vx = v_x0
-        self.Vy = v_y0
-        self.velocity_vector = (self.Vx, self.Vy)
-
-    def draw_point(self, ax):
-        self.PlotPoint = ax.plot(self.x, self.y, marker='o')
-
-    def redraw_point(self, x, y):
-        self.PlotPoint.set_data(x, y)
+import random
 
 
 def print_hi(name):
@@ -75,10 +10,10 @@ def print_hi(name):
 
 def __main__():
     number_of_points = int(input('Enter number of points '))
-    points_tuple_x = [rand.random() for i in range(number_of_points)]
-    points_tuple_y = [rand.random() for i in range(number_of_points)]
-    points_tuple_vx0 = [rand.random() for i in range(number_of_points)]
-    points_tuple_vy0 = [rand.random() for i in range(number_of_points)]
+    points_tuple_x = [random.uniform(-1, 3) for _ in range(number_of_points)]
+    points_tuple_y = [random.uniform(-1, 3) for _ in range(number_of_points)]
+    points_tuple_vx0 = [random.uniform(-1, 3) for _ in range(number_of_points)]
+    points_tuple_vy0 = [random.uniform(-1, 3) for _ in range(number_of_points)]
 
     print(points_tuple_x)
     print(points_tuple_y)
@@ -92,17 +27,15 @@ def __main__():
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
+    ax.axis('equal')
     # ax.plot(points_tuple_x, points_tuple_y, marker='o') -- Draws points as a polyline
-    drawn_points = []
+    # drawn_points = []
     for point in points:
-        p, = ax.plot(point.x0, point.y0, marker='o')  # Draws as separated points
-        drawn_points.append(p)
+        point.draw_point(ax)
 
-    print(drawn_points)
+    tube.draw_tube_border(ax)
 
-    tube.draw_tube(ax)
-
-    global t, x_now, y_now, vx_now, vy_now
+    global t, x_now, y_now, vx_now, vy_now, anim
     t = 0
     dt = 0.01
 
@@ -118,10 +51,10 @@ def __main__():
     vx_t0 = [point.Vx0 for point in points]
     vy_t0 = [point.Vy0 for point in points]
 
-    x_now = np.array(x_t0)
-    y_now = np.array(y_t0)
-    vx_now = np.array(vx_t0)
-    vy_now = np.array(vy_t0)
+    x_now = numpy.array(x_t0)
+    y_now = numpy.array(y_t0)
+    vx_now = numpy.array(vx_t0)
+    vy_now = numpy.array(vy_t0)
 
     def calculate_new_points(i):
         global t, x_now, y_now, vx_now, vy_now
@@ -135,22 +68,32 @@ def __main__():
         vy_new = vy_now + dt * d_vy
 
         is_point_struck = tube.check_border_strike(x_new, y_new)
-        # print(is_point_struck)
 
         for i in range(len(is_point_struck)):
             if is_point_struck[i]:
-                vx_new[i] = 0
-                vy_new[i] = 0
+                n_x = (tube.x_center - x_now[i]) / (
+                        ((tube.x_center - x_now[i]) ** 2 + (tube.y_center - y_now[i]) ** 2) ** 0.5)
+                n_y = (tube.y_center - y_now[i]) / (
+                        ((tube.x_center - x_now[i]) ** 2 + (tube.y_center - y_now[i]) ** 2) ** 0.5)
+                vx_new[i] = -vx_now[i] * (n_x ** 2 - n_y ** 2) - 2 * vy_now[i] * n_x * n_y
+                vy_new[i] = vy_now[i] * (n_x ** 2 - n_y ** 2) - 2 * vx_now[i] * n_x * n_y
+                print(vx_now[i], vy_now[i], vx_new[i], vy_new[i])
+                print(vx_now[i] * n_x + vy_now[i] * n_y, vx_new[i] * n_x + vy_new[i] * n_y)
+                print(vx_now[i] * n_y - vy_now[i] * n_x, vx_new[i] * n_y - vy_new[i] * n_x)
+                x_new[i] = x_now[i] + dt * vx_new[i]
+                y_new[i] = y_now[i] + dt * vy_new[i]
+
+        is_point_struck_with_point = implement_strike_to_points(x_new, y_new)
 
         x_now = x_new
         y_now = y_new
         vx_now = vx_new
         vy_now = vy_new
 
-        for inner_point, xi, yi in zip(drawn_points, x_new, y_new):
-            inner_point.set_data(xi, yi)
+        for inner_point, xi, yi in zip(points, x_new, y_new):
+            inner_point.redraw_point(xi, yi)
 
-        return drawn_points
+        return [point_.plot_point for point_ in points]
 
     anim = FuncAnimation(fig, calculate_new_points, interval=dt * 1000, blit=True)
 
