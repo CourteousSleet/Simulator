@@ -3,7 +3,7 @@ from classes import *
 
 def __main__():
     app = QApplication([])
-    window = WidgetOfLife()
+    window = OceanWidget()
     window.show()
     app.exec_()
 

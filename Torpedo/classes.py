@@ -1,12 +1,14 @@
-import math
-
 from PyQt5.QtWidgets import *
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as NavigationToolbar)
-import numpy
 import matplotlib.pyplot as plt
+import math
+import numpy
+import sympy
+import FormOfTheTorpedo
 import oceanwidget
-import FormOfTheTorpeda
+
+global mass, radius, a, b, bigger_radius, k, drag_force, side_drag_force, wheel_force, rho, v_vpd, t, state_vector
 
 
 class Aim:
@@ -16,8 +18,9 @@ class Aim:
     is_destroyed = False
 
     def __init__(self, x, y, s_):
-        self.x = x
-        self.y = y
+        time = sympy.lambdify('t')
+        self.x = sympy.lambdify(time, x)
+        self.y = sympy.lambdify(time, y)
         self.size = s_
         self.drawn_aim = None
         phi = numpy.linspace(0, 6.28, 20)
@@ -55,15 +58,20 @@ class Torpedo:
         self.is_exploded = 0
         self.drawn_torpedo = None
         self.torpedo_x = numpy.array([b, b * 1.05, b, -a * 0.9, -a, -a * 0.9, b])
-        self.torpedo_y = numpy.array([R, 0, -R, -R, 0, R, R])
+        self.torpedo_y = numpy.array([bigger_radius, 0, -bigger_radius, -bigger_radius, 0, bigger_radius, bigger_radius])
 
     def draw(self, axes):
         r_torpedo_x, r_torpedo_y = rot2d(self.torpedo_x, self.torpedo_y, self.phi)
         self.drawn_torpedo = axes.plot(self.x + r_torpedo_x, self.y + r_torpedo_y)[0]
 
-    def redraw(self, axes):
-        r_torpedo_x, r_torpedo_y = rot2d(self.torpedo_x, self.torpedo_y, self.phi)
-        self.drawn_torpedo = axes.plot(self.x + r_torpedo_x, self.y + r_torpedo_y)
+    def redraw(self):
+        if self.is_exploded:
+            self.torpedo_x *= 1.002
+            self.torpedo_y *= 1.004
+            self.drawn_torpedo.set_data(self.x + self.torpedo_x, self.y + self.torpedo_y)
+        else:
+            r_torpedo_x, r_torpedo_y = rot2d(self.torpedo_x, self.torpedo_y, self.phi)
+            self.drawn_torpedo.set_data(self.x + r_torpedo_x, self.y + r_torpedo_y)
 
     #
     #                                                                             **
@@ -98,10 +106,10 @@ class Torpedo:
         explosion_point_x_2 = self.a / 2 * numpy.sin(phi_2)
         explosion_point_y_2 = self.a / 2 * numpy.cos(phi_2)
 
-        explosion_point_x =
-        explosion_point_y =
-
-        self.drawn_torpedo = axes.plot(self.x + r_torpedo_x, self.y + r_torpedo_y)
+        self.torpedo_x = numpy.hstack([explosion_point_x_1, explosion_point_x_2])
+        self.torpedo_y = numpy.hstack([explosion_point_y_1, explosion_point_y_2])
+        self.drawn_torpedo = \
+        axes.plot(self.x + self.torpedo_x, self.y + self.torpedo_y, marker='o', color=[255, 248, 231])[0]
 
     def check_for_strike(self, aim_, axes):
         x_head = self.x + b * numpy.cos(self.phi)
@@ -116,9 +124,9 @@ def rot2d(x, y, phi):
     return rot_x, rot_y
 
 
-def calculate_movement_equation(state_vector, alpha):
-    global m, r, a, b, R, k, Cl, Cb, Cvr, rho, Vvpd
-    x, y, phi, v_x, v_y, omega = state_vector
+def calculate_movement_equation(state_vector_, alpha):
+    global mass, radius, a, b, bigger_radius, k, drag_force, side_drag_force, wheel_force, rho, v_vpd
+    x, y, phi, v_x, v_y, omega = state_vector_
     dx = v_x
     dy = v_y
     d_phi = omega
@@ -126,127 +134,114 @@ def calculate_movement_equation(state_vector, alpha):
     v_l = v_x * numpy.cos(phi) + v_y * numpy.sin(phi)
     v_b = -v_x * numpy.sin(phi) + v_y * numpy.cos(phi)
 
-    s_l = 3.14 * R ** 2
-    s_b = (a + b) * 2 * R
-    s_r = R ** 2 * k
+    s_l = 3.14 * bigger_radius ** 2
+    s_b = (a + b) * 2 * bigger_radius
+    s_r = bigger_radius ** 2 * k
 
-    j = m * (a ** 2 + b ** 2) / 6 * r
+    j = mass * (a ** 2 + b ** 2) / 6 * radius
 
-    f_sl = rho * s_l * Cl * v_l ** 2 * numpy.sign(v_l) / 2
-    f_sb = rho * s_b * Cb * v_b ** 2 * numpy.sign(v_b) / 2
-    m_s = rho * s_b * Cvr * omega ** 2 * (b + a) ** 2 * numpy.sign(omega) / 8
+    f_sl = rho * s_l * drag_force * v_l ** 2 * numpy.sign(v_l) / 2
+    f_sb = rho * s_b * side_drag_force * v_b ** 2 * numpy.sign(v_b) / 2
+    m_s = rho * s_b * wheel_force * omega ** 2 * (b + a) ** 2 * numpy.sign(omega) / 8
 
-    f_dv = rho * 3.14 * R ** 2 * Vvpd ** 2
-    f_r = rho * s_r * Vvpd ** 2 * (numpy.sin(alpha)) ** 2 * numpy.sign(numpy.sin(alpha)) / 2
+    f_dv = rho * 3.14 * bigger_radius ** 2 * v_vpd ** 2
+    f_r = rho * s_r * v_vpd ** 2 * (numpy.sin(alpha)) ** 2 * numpy.sign(numpy.sin(alpha)) / 2
 
-    d_v_x = (f_dv * numpy.cos(phi) + f_sb * numpy.sin(phi) - f_sl * numpy.cos(phi) + f_r * numpy.sin(phi - alpha)) / m
-    d_v_y = (f_dv * numpy.sin(phi) - f_sb * numpy.cos(phi) - f_sl * numpy.sin(phi) - f_r * numpy.cos(phi - alpha)) / m
+    d_v_x = (f_dv * numpy.cos(phi) + f_sb * numpy.sin(phi) - f_sl * numpy.cos(phi) + f_r * numpy.sin(
+        phi - alpha)) / mass
+    d_v_y = (f_dv * numpy.sin(phi) - f_sb * numpy.cos(phi) - f_sl * numpy.sin(phi) - f_r * numpy.cos(
+        phi - alpha)) / mass
     d_omega = (a * f_r * numpy.cos(alpha) - m_s) / j
 
     return numpy.array([dx, dy, d_phi, d_v_x, d_v_y, d_omega])
 
 
-global t
-
-
-class OceanWidget(QMainWindow, FormOfTheTorpeda.Ui_MainWindow):
+class OceanWidget(QMainWindow, FormOfTheTorpedo.Ui_MainWindow):
 
     def __init__(self):
-        QMainWindow.__init__(self, flags=None)
+        QMainWindow.__init__(self)
 
         self.setupUi(self)
 
-        self.setWindowTitle("Творение")
+        self.setWindowTitle("Piece of shit")
 
-        self.FireButton.clicked.connect(self.draw)
+        self.FireButton.clicked.connect(self.draw_the_thing)
 
-        # self.horizontalScrollBar.valueChanged.connect(self.value_change)
+        self.horizontalScrollBar.valueChanged.connect(self.value_change)
         self.addToolBar(NavigationToolbar(self.OceanWidget.canvas, self))
 
-    def draw(self):
-        global m, r, a, b, R, k, Cl, Cb, Cvr, rho, Vvpd, t
+    def draw_the_thing(self):
+        global mass, radius, a, b, bigger_radius, k, drag_force, side_drag_force, wheel_force, rho, v_vpd, t, state_vector
         # Alpha = self.AngleBar.value()/5000
-        print(0)
-        #     Параметры массы
-        m = float(self.m_Edit.text())
-        r = float(self.r_Edit.text())
+        #     Mass parameters
+        mass = float(self.m_edit.text())
+        radius = float(self.radius_edit.text())
 
-        #     Геометрические параметры
-        a = float(self.a_Edit.text())
-        b = float(self.b_Edit.text())
-        R = float(self.R_Edit.text())
-        k = float(self.k_Edit.text())
+        #     Geometric parameters
+        a = float(self.a_edit.text())
+        b = float(self.b_edit.text())
+        bigger_radius = float(self.bigger_radius_edit.text())
+        k = float(self.k_edit.text())
 
-        Cl = float(self.Cl_Edit.text())
-        Cb = float(self.Cb_Edit.text())
-        Cvr = float(self.Cvr_Edit.text())
+        #     Forces parameters
+        drag_force = float(self.drag_force_edit.text())
+        side_drag_force = float(self.side_drag_force_edit.text())
+        wheel_force = float(self.c_vr_edit.text())
 
-        rho = float(self.rho_Edit.text())
+        rho = float(self.rho_edit.text())
 
-        Vvpd = float(self.Vvpd_Edit.text())
+        v_vpd = float(self.v_vpd_edit.text())
 
-        x0 = float(self.x0_Edit.text())
-        y0 = float(self.y0_Edit.text())
-        phi0 = float(self.phi0_Edit.text())
-        Vx0 = float(self.Vx0_Edit.text())
-        Vy0 = float(self.Vy0_Edit.text())
-        Omega0 = float(self.Omega0_Edit.text())
-
-        print(1)
+        x0 = float(self.x0_edit.text())
+        y0 = float(self.y0_edit.text())
+        phi0 = float(self.phi0_edit.text())
+        v_x0 = float(self.v_x0_edit.text())
+        v_y0 = float(self.v_y0_edit.text())
+        omega_0 = float(self.omega0_edit.text())
 
         self.OceanWidget.canvas.axes.clear()
         self.OceanWidget.canvas.axes.grid(True)
         self.OceanWidget.canvas.axes.axis('scaled')
         self.OceanWidget.canvas.axes.set(xlim=[0, (a + b) * 20], ylim=[-(a + b) * 10, (a + b) * 10])
-        self.OceanWidget.canvas.axes.set_title('Водная гладь')
-        # TorpedaX = numpy.array([b, b*1.05, b, -a*0.9, -a, -a*0.9, b])
-        # TorpedaY = numpy.array([R, 0, -R, -R, 0, R, R])
-        print(1.1)
-        # (numpy.random.uniform(0, (a + b) * 20),
-        # numpy.random.uniform(-(a + b) * 10, (a + b) * 10), marker='o')[0]
+        self.OceanWidget.canvas.axes.set_title('Water Surface')
+        torpedo_x = numpy.array([b, b * 1.05, b, -a * 0.9, -a, -a * 0.9, b])
+        torpedo_y = numpy.array([bigger_radius, 0, -bigger_radius, -bigger_radius, 0, bigger_radius, bigger_radius])
+        # (np.random.uniform(0, (a + b) * 20),
+        # np.random.uniform(-(a + b) * 10, (a + b) * 10), marker='o')[0]
 
-        print(1.3)
-
-        Our_Torpeda = Torpedo(x0, y0, phi0, a, b, R)
-        Our_Torpeda.Draw(self.OceanWidget.canvas.axes)
-        Drawed_Torpeda = Our_Torpeda.drawn_torpedo
-        Our_Aim = Aim(50, 20, 10)
-        Our_Aim.Draw(self.OceanWidget.canvas.axes)
-        Drawed_Aim = Our_Aim.DrawedAim
+        our_torpedo = Torpedo(x0, y0, phi0, a, b, bigger_radius)
+        our_torpedo.draw(self.OceanWidget.canvas.axes)
+        drawn_torpedo = our_torpedo.drawn_torpedo
+        our_aim = Aim(50, 20, 10)
+        our_aim.draw(self.OceanWidget.canvas.axes)
+        drawn_aim = our_aim.drawn_aim
         # aim = self.OceanWidget.canvas.axes.plot(50, 20, marker='o')[0]
-        print(2)
 
         self.OceanWidget.canvas.show()
-        print(3)
 
-        global t, StateVector
-
-        InitialVector = numpy.array([x0, y0, phi0, Vx0, Vy0, Omega0])
-        StateVector = InitialVector
+        initial_vector = numpy.array([x0, y0, phi0, v_x0, v_y0, omega_0])
+        state_vector = initial_vector
 
         t0 = 0
         dt = 0.01
-
         t = t0
 
-        print(4)
-
         def animate(i):
-            global t, StateVector
-            Alpha = self.AngleBar.value() / 180 * 3.14 / 6
-            print(StateVector)
+            global t, state_vector
+            alpha = self.AngleBar.value() / 180 * 3.14 / 6
+            print(state_vector)
             t = t + dt
 
-            dVector = calculate_movement_equation(StateVector, t, Alpha)
-            StateVector = StateVector + dt * dVector
-            print(StateVector)
-            RTorpedaX, RTorpedaY = rot2d(TorpedaX, TorpedaY, StateVector[2])
-            Drawed_Torpeda.set_data(StateVector[0] + RTorpedaX, StateVector[1] + RTorpedaY)
-            # aim.set_data(numpy.random.uniform(0, (a + b) * 20), numpy.random.uniform(-(a + b) * 10, (a + b) * 10))
-            return [Drawed_Torpeda, Drawed_Aim]
+            d_vector = calculate_movement_equation(state_vector, alpha)
+            state_vector = state_vector + dt * d_vector
+            print(state_vector)
+            r_torpedo_x, r_torpedo_y = rot2d(torpedo_x, torpedo_y, state_vector[2])
+            drawn_torpedo.set_data(state_vector[0] + r_torpedo_x, state_vector[1] + r_torpedo_y)
+            # aim.set_data(np.random.uniform(0, (a + b) * 20), np.random.uniform(-(a + b) * 10, (a + b) * 10))
+            return [drawn_torpedo, drawn_aim]
 
         fig = self.OceanWidget.canvas.figure
         print(type(fig))
-        anim = FuncAnimation(fig, animate, interval=10, blit=True)
+        animation = FuncAnimation(fig, animate, interval=10, blit=True)
         self.OceanWidget.canvas.draw()
         # plt.show()

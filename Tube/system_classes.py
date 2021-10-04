@@ -28,7 +28,6 @@ class Point2D:
     Vy0 = 0
     point_radius = 0.1
     coord = (x0, y0)
-    plot_point = []
 
     def __init__(self, x0, y0, v_x0, v_y0):
         self.x0 = x0
@@ -37,6 +36,7 @@ class Point2D:
         self.Vx0 = v_x0
         self.Vy0 = v_y0
         self.velocity_vector = (v_x0, v_y0)
+        self.plot_point = None
 
     def draw_point(self, ax):
         # noinspection PyAttributeOutsideInit
