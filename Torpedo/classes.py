@@ -6,73 +6,14 @@ from matplotlib.backends.backend_qt5agg import (NavigationToolbar2QT as Navigati
 import numpy
 import matplotlib.pyplot as plt
 import oceanwidget
-import OnlyPoint
-
-
-class WidgetOfLife(QMainWindow, OnlyPoint.Ui_MainWindow):
-
-    def __init__(self):
-        QMainWindow.__init__(self)
-
-        self.setupUi(self)
-
-        self.setWindowTitle("Пошла!")
-
-        self.ButtonOfTheStart.clicked.connect(self.start)
-
-        # self.horizontalScrollBar.valueChanged.connect(self.valuechange)
-        self.addToolBar(NavigationToolbar(self.WidgetOfLife.canvas, self))
-
-    def start(self):
-        print(1)
-        r = self.RadiusBar.value() / 100
-        print(1.5)
-        self.WidgetOfLife.canvas.axes.clear()
-        print(1.7)
-        t0 = 0
-        x0 = r * numpy.cos(t0)
-        y0 = r * numpy.sin(t0)
-        print(2)
-        point = self.WidgetOfLife.canvas.axes.plot(x0, y0, marker='o')[0]
-        print(3)
-        self.WidgetOfLife.canvas.axes.grid(True)
-        self.WidgetOfLife.canvas.axes.axis('scaled')
-        self.WidgetOfLife.canvas.axes.set(xlim=[-1.1, 1.1], ylim=[-1.1, 1.1])
-        self.WidgetOfLife.canvas.axes.set_title('Окружность')
-        print(4)
-        self.WidgetOfLife.canvas.draw()
-        print(5)
-        global t
-        t = t0
-        print(5.1)
-        print(self.Dt_Edit.text().strip())
-        print(type(self.Dt_Edit.text()))
-        dt = float(self.Dt_Edit.text())
-        print(6)
-
-        def animate(i):
-            print(7)
-            global t, r
-            t += dt
-            r = self.RadiusBar.value() / 100
-
-            x = r * numpy.cos(t)
-            y = r * numpy.sin(t)
-
-            point.set_data(x, y)
-
-            return [point]
-
-        anim = FuncAnimation(self.WidgetOfLife.canvas.figure, animate,
-                             interval=10, blit=True)
-        self.WidgetOfLife.canvas.draw()
+import FormOfTheTorpeda
 
 
 class Aim:
     x = 0
     y = 0
     size = 10
-    is_destroyed = 0
+    is_destroyed = False
 
     def __init__(self, x, y, s_):
         self.x = x
@@ -97,8 +38,8 @@ class Torpedo:
     radius = 1
     sensor_r = -1
     sensor_phi = -1
-    is_detected = 0
-    is_exploded = 0
+    is_detected = False
+    is_exploded = False
     sensor_radius_max = 50
     sensor_phi_max = 0.5
 
@@ -147,8 +88,27 @@ class Torpedo:
 
         return alpha
 
-    def check_for_strike(self, aim_):
-        if ()
+    def explode(self, axes):
+        self.is_exploded = True
+        n = 6
+        phi_1 = numpy.linspace(0, 6.28, n + 1)
+        explosion_point_x_1 = self.a / 2 * numpy.sin(phi_1)
+        explosion_point_y_1 = self.a / 2 * numpy.cos(phi_1)
+        phi_2 = numpy.linspace(0, 6.28, 2 * n + 1)
+        explosion_point_x_2 = self.a / 2 * numpy.sin(phi_2)
+        explosion_point_y_2 = self.a / 2 * numpy.cos(phi_2)
+
+        explosion_point_x =
+        explosion_point_y =
+
+        self.drawn_torpedo = axes.plot(self.x + r_torpedo_x, self.y + r_torpedo_y)
+
+    def check_for_strike(self, aim_, axes):
+        x_head = self.x + b * numpy.cos(self.phi)
+        y_head = self.y + b * numpy.sin(self.phi)
+        if (x_head - aim_.x) ** 2 + (y_head - aim_.y) ** 2 < (aim_.size / 2) ** 2:
+            self.explode(axes)
+
 
 def rot2d(x, y, phi):
     rot_x = x * numpy.cos(phi) - y * numpy.sin(phi)
@@ -192,18 +152,18 @@ global t
 class OceanWidget(QMainWindow, FormOfTheTorpeda.Ui_MainWindow):
 
     def __init__(self):
-        QMainWindow.__init__(self)
+        QMainWindow.__init__(self, flags=None)
 
         self.setupUi(self)
 
         self.setWindowTitle("Творение")
 
-        self.FireButton.clicked.connect(self.HereAreWeGo)
+        self.FireButton.clicked.connect(self.draw)
 
-        # self.horizontalScrollBar.valueChanged.connect(self.valuechange)
+        # self.horizontalScrollBar.valueChanged.connect(self.value_change)
         self.addToolBar(NavigationToolbar(self.OceanWidget.canvas, self))
 
-    def HereAreWeGo(self):
+    def draw(self):
         global m, r, a, b, R, k, Cl, Cb, Cvr, rho, Vvpd, t
         # Alpha = self.AngleBar.value()/5000
         print(0)
@@ -247,7 +207,7 @@ class OceanWidget(QMainWindow, FormOfTheTorpeda.Ui_MainWindow):
 
         print(1.3)
 
-        Our_Torpeda = Torpeda(x0, y0, phi0, a, b, R)
+        Our_Torpeda = Torpedo(x0, y0, phi0, a, b, R)
         Our_Torpeda.Draw(self.OceanWidget.canvas.axes)
         Drawed_Torpeda = Our_Torpeda.drawn_torpedo
         Our_Aim = Aim(50, 20, 10)
@@ -271,7 +231,7 @@ class OceanWidget(QMainWindow, FormOfTheTorpeda.Ui_MainWindow):
 
         print(4)
 
-        def anima(i):
+        def animate(i):
             global t, StateVector
             Alpha = self.AngleBar.value() / 180 * 3.14 / 6
             print(StateVector)
@@ -287,6 +247,6 @@ class OceanWidget(QMainWindow, FormOfTheTorpeda.Ui_MainWindow):
 
         fig = self.OceanWidget.canvas.figure
         print(type(fig))
-        anim = FuncAnimation(fig, anima, interval=10, blit=True)
+        anim = FuncAnimation(fig, animate, interval=10, blit=True)
         self.OceanWidget.canvas.draw()
         # plt.show()
