@@ -18,7 +18,6 @@ These are concluded in five laboratory works:
 - (II lab) Torpedo Launcher with an interface.
 - (III lab) Labyrinth.
 - (IV lab) Planet System.
-- (V lab) .
 
 Below are the lab options that were assigned to me:
 

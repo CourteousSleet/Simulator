@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-
-
 # Храню график сразу в карте. Дает преимущства:
 #
 # -   Разгружает main
@@ -63,7 +61,6 @@ class Map():
                     h_[i + 1] = dot
                 t_[-1] = t
             self.add_bounds(h_, t_)
-
 
 class Boundary():
     def __init__(self, h, t):
