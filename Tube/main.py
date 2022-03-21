@@ -1,15 +1,12 @@
 from matplotlib.animation import FuncAnimation
-from system_classes import *
 import matplotlib.pyplot as plt
 import random
 
-
-def print_hi(name):
-    print(f'{name}')
+from system_classes import *
 
 
 def __main__():
-    number_of_points = int(input('Enter number of points '))
+    number_of_points = int(input('Enter number of points: '))
     points_tuple_x = [random.uniform(-1, 3) for _ in range(number_of_points)]
     points_tuple_y = [random.uniform(-1, 3) for _ in range(number_of_points)]
     points_tuple_vx0 = [random.uniform(-1, 3) for _ in range(number_of_points)]
@@ -25,7 +22,7 @@ def __main__():
 
     tube = TubeBorder(3, 1, 1)
 
-    fig = plt.figure()
+    fig = plt.figure(num='Moving Points, Laboratory Work I, Ian Ilyasov')
     ax = fig.add_subplot(1, 1, 1)
     ax.axis('equal')
     # ax.plot(points_tuple_x, points_tuple_y, marker='o') -- Draws points as a polyline
@@ -35,7 +32,7 @@ def __main__():
 
     tube.draw_tube_border(ax)
 
-    global t, x_now, y_now, vx_now, vy_now, anim
+    global t, x_now, y_now, vx_now, vy_now
     t = 0
     dt = 0.01
 
@@ -84,6 +81,36 @@ def __main__():
                 y_new[i] = y_now[i] + dt * vy_new[i]
 
         is_point_struck_with_point = implement_strike_to_points(x_new, y_new)
+        k = 0
+
+        for i in numpy.arange(len(x_new) - 1):
+            for j in numpy.arange(i + 1, len(x_new)):
+
+                if is_point_struck_with_point[i, j]:
+                    vx1, vy1 = vx_now[i], vy_now[i]
+                    vx2, vy2 = vx_now[j], vy_now[j]
+
+                    n_x = (x_now[j] - x_now[i]) / (((x_now[j] - x_now[i]) ** 2 + (y_now[j] - y_now[i]) ** 2) ** 0.5)
+                    n_y = (y_now[j] - y_now[i]) / (((x_now[j] - x_now[i]) ** 2 + (y_now[j] - y_now[i]) ** 2) ** 0.5)
+
+                    denominator = 2 * (n_x ** 2 + n_y ** 2)
+
+                    vx_new1 = (n_x ** 2 * vx1 + n_x ** 2 * vx2 - n_x * n_y * vy1 + n_x * n_y * vy2 + 2 * n_y ** 2 * vx1 -
+                              n_x * k * (n_x * vx1 - n_x * vx2 + n_y * vy1 - n_y * vy2)) / denominator
+
+                    vx_new2 = (n_x ** 2 * vx1 + n_x ** 2 * vx2 + n_x * n_y * vy1 - n_x * n_y * vy2 + 2 * n_y ** 2 * vx2 +
+                              n_x * k * (n_x * vx1 - n_x * vx2 + n_y * vy1 - n_y * vy2)) / denominator
+
+                    vy_new1 = (n_y ** 2 * vy1 + n_y ** 2 * vy2 - n_x * vx1 * n_y + n_x * n_y * vx2 + 2 * n_x ** 2 * vy1 -
+                              n_y * k * (n_x * vx1 - n_x * vx2 + n_y * vy1 - n_y * vy2)) / denominator
+
+                    vy_new2 = (n_y ** 2 * vy1 + n_y ** 2 * vy2 + n_x * vx1 * n_y - n_x * n_y * vx2 + 2 * n_x ** 2 * vy2 +
+                              n_y * k * (n_x * vx1 - n_x * vx2 + n_y * vy1 - n_y * vy2)) / denominator
+
+                    x_new[i] = x_now[i] + dt * vx_new1
+                    y_new[i] = y_now[i] + dt * vy_new1
+                    x_new[j] = x_now[j] + dt * vx_new2
+                    y_new[j] = y_now[j] + dt * vy_new2
 
         x_now = x_new
         y_now = y_new
@@ -102,4 +129,3 @@ def __main__():
 
 if __name__ == '__main__':
     __main__()
-    print_hi('Finished')
